@@ -1,11 +1,16 @@
 package main
 
 import (
-	"go-glyph-v2/configuration"
-	"go-glyph-v2/internal/api/app"
+	"go-glyph/configuration"
+	"go-glyph/internal/api/app"
 	"log"
 )
 
+// @title           Glyph Dota 2 REST API
+// @version         1.0
+// @description     Go Glyph REST API
+
+// @host      localhost:8000
 func main() {
 	err := configuration.LoadConfig(".env")
 	if err != nil {

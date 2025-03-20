@@ -4,22 +4,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"go-glyph-v2/configuration"
-	"go-glyph-v2/internal/api/controllers"
-	"go-glyph-v2/internal/api/middleware"
-	"go-glyph-v2/internal/api/routers"
-	"go-glyph-v2/internal/core/services"
-	"go-glyph-v2/internal/data/database"
-	"go-glyph-v2/internal/data/repository"
+	"go-glyph/configuration"
+	"go-glyph/internal/api/controllers"
+	"go-glyph/internal/api/middleware"
+	"go-glyph/internal/api/routers"
+	"go-glyph/internal/core/services"
+	"go-glyph/internal/data/database"
+	"go-glyph/internal/data/repository"
 	"log"
 )
 
-// @title			Glyph Dota 2 REST API
-// @version		1.0
-// @description	API for Glyph Dota 2 application
-// @host			go-glyph-v2-f53b68856ba5.herokuapp.com
 func Run(c *configuration.EnvConfigModel) {
-
 	db := database.ConnectDB(c)
 
 	glyphRepository := repository.NewGlyphRepository(db)
@@ -42,7 +37,7 @@ func Run(c *configuration.EnvConfigModel) {
 
 	//	CORS middleware
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "https://s3rbug.github.io",
+		AllowOrigins: "*",
 		AllowHeaders: "POST",
 	}))
 

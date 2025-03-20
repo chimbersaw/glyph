@@ -3,7 +3,7 @@ package services
 import (
 	"encoding/json"
 	"fmt"
-	"go-glyph-v2/internal/core/dtos"
+	"go-glyph/internal/core/dtos"
 	"net/http"
 )
 

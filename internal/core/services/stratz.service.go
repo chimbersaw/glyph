@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"github.com/machinebox/graphql"
-	"go-glyph-v2/internal/core/dtos"
+	"go-glyph/internal/core/dtos"
 )
 
 // TEMPORARY USE OPENDOTA API

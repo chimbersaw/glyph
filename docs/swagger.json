@@ -1,12 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "API for Glyph Dota 2 application",
+        "description": "Go Glyph REST API",
         "title": "Glyph Dota 2 REST API",
         "contact": {},
         "version": "1.0"
     },
-    "host": "go-glyph-v2-f53b68856ba5.herokuapp.com",
+    "host": "localhost:8000",
     "paths": {
         "/api/glyph/{matchID}": {
             "post": {

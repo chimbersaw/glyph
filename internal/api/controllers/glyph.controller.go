@@ -3,8 +3,8 @@ package controllers
 import (
 	"errors"
 	"github.com/gofiber/fiber/v2"
-	"go-glyph-v2/internal/core/dtos"
-	"go-glyph-v2/internal/core/models"
+	"go-glyph/internal/core/dtos"
+	"go-glyph/internal/core/models"
 	"strconv"
 )
 

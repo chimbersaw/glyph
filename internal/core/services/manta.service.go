@@ -10,8 +10,8 @@ import (
 	"github.com/dotabuff/manta/dota"
 	"golang.org/x/exp/slices"
 
-	"go-glyph-v2/internal/core/dtos"
-	"go-glyph-v2/internal/core/models"
+	"go-glyph/internal/core/dtos"
+	"go-glyph/internal/core/models"
 )
 
 type MantaService struct {

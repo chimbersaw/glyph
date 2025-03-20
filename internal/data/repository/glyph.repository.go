@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"go-glyph-v2/internal/core/models"
+	"go-glyph/internal/core/models"
 	"gorm.io/gorm"
 )
 

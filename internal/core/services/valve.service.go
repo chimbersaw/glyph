@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"compress/bzip2"
 	"fmt"
-	"go-glyph-v2/internal/core/dtos"
+	"go-glyph/internal/core/dtos"
 	"io"
 	"net/http"
 	"os"

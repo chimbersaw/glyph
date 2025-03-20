@@ -23,10 +23,10 @@ definitions:
       username:
         type: string
     type: object
-host: go-glyph-v2-f53b68856ba5.herokuapp.com
+host: localhost:8000
 info:
   contact: {}
-  description: API for Glyph Dota 2 application
+  description: Go Glyph REST API
   title: Glyph Dota 2 REST API
   version: "1.0"
 paths:

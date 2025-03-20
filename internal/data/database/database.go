@@ -2,8 +2,8 @@ package database
 
 import (
 	"fmt"
-	"go-glyph-v2/configuration"
-	"go-glyph-v2/internal/core/models"
+	"go-glyph/configuration"
+	"go-glyph/internal/core/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
@@ -18,10 +18,12 @@ func ConnectDB(config *configuration.EnvConfigModel) *gorm.DB {
 		config.DBPort,
 		config.SSLMode,
 	)
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to the Database!\n", err.Error())
 	}
+
 	//	Extension for postgresql uuid support
 	db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 

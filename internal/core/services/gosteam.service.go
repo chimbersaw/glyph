@@ -8,7 +8,7 @@ import (
 	"github.com/paralin/go-dota2/protocol"
 	"github.com/paralin/go-steam"
 	"github.com/sirupsen/logrus"
-	"go-glyph-v2/internal/core/dtos"
+	"go-glyph/internal/core/dtos"
 	"log"
 	"strings"
 	"sync"

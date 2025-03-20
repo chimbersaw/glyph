@@ -1,9 +1,9 @@
 package services
 
 import (
-	"go-glyph-v2/internal/core/dtos"
-	"go-glyph-v2/internal/core/models"
-	"go-glyph-v2/internal/core/validator"
+	"go-glyph/internal/core/dtos"
+	"go-glyph/internal/core/models"
+	"go-glyph/internal/core/validator"
 )
 
 type GlyphServiceGlyphRepository interface {
