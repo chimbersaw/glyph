@@ -49,10 +49,10 @@ chmod +x run.sh
 
 ```bash
 # Build with conflict warnings enabled
-go build -ldflags "-X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn" main.go
+go build -ldflags "-X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn"
 
 # Run the built binary
-./main
+./go-glyph
 
 # Or run directly with environment variable
 GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn go run main.go

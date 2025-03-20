@@ -11,8 +11,9 @@ func SetupRoutes(app *fiber.App,
 
 	api := app.Group("/api")
 
-	//	Use 'swag init' to generate new /docs files, details: https://github.com/gofiber/swagger#usage
+	// Use 'swag init' to generate new /docs files, details: https://github.com/gofiber/swagger#usage
 	api.Get("/docs/*", swagger.HandlerDefault)
+
 	// Redirect to docs
 	app.Get("/", func(ctx *fiber.Ctx) error {
 		return ctx.Redirect("/api/docs/")

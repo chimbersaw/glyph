@@ -3,10 +3,12 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/paralin/go-dota2"
 	"github.com/paralin/go-dota2/events"
 	"github.com/paralin/go-dota2/protocol"
 	"github.com/paralin/go-steam"
+	"github.com/paralin/go-steam/protocol/steamlang"
 	"github.com/sirupsen/logrus"
 	"go-glyph/internal/core/dtos"
 	"log"
@@ -59,8 +61,7 @@ func (s *GoSteamService) GetMatchFromGoSteamService(matchID int) (dtos.Match, er
 	}
 
 	return dtos.Match{
-		ID: matchID,
-		// TODO: add some validation to this, probably not xD
+		ID:         matchID,
 		Cluster:    int(matchDetails.Match.GetCluster()),
 		ReplaySalt: int(matchDetails.Match.GetReplaySalt()),
 	}, nil
@@ -68,6 +69,7 @@ func (s *GoSteamService) GetMatchFromGoSteamService(matchID int) (dtos.Match, er
 
 func (s *GoSteamService) changeClient() error {
 	s.lock.Lock()
+
 	if s.counter >= uint(len(s.steamLoginInfos)) {
 		s.counter = 0
 	}
@@ -75,8 +77,10 @@ func (s *GoSteamService) changeClient() error {
 	if err != nil {
 		return err
 	}
+
 	s.dotaClient = dc
 	s.counter++
+
 	s.lock.Unlock()
 	return nil
 }
@@ -87,34 +91,50 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails) (*dota2.Dota2, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	dc := dota2.New(sc, logrus.New())
 	go func(dc *dota2.Dota2) {
 		for event := range sc.Events() {
 			switch e := event.(type) {
+
 			case *steam.ConnectedEvent:
+				fmt.Println("Connected, attempting to log in...")
 				sc.Auth.LogOn(steamLoginInfo)
+
 			case *steam.LoggedOnEvent:
-				log.Println("Logged on to Steam")
+				log.Println("Logging in...")
+				sc.Social.SetPersonaState(steamlang.EPersonaState_Online)
+				time.Sleep(5 * time.Second)
 				dc.SetPlaying(true)
 				time.Sleep(5 * time.Second)
 				dc.SayHello()
+
 			case *steam.LogOnFailedEvent:
 				log.Printf("LogOn failed. Reason: %v\n", e.Result)
+
 			case *events.GCConnectionStatusChanged:
-				log.Println("GCConnectionStatusChanged")
 				isReady := e.NewState == protocol.GCConnectionStatus_GCConnectionStatus_HAVE_SESSION
 				if !isReady {
 					log.Println("GCConnectionStatusChanged: Not ready")
 					dc.SayHello()
+				} else {
+					log.Println("GCConnectionStatusChanged")
 				}
+
+			case *steam.AccountInfoEvent:
+				fmt.Println(e.AccountFlags)
+
 			case steam.FatalErrorEvent:
 				log.Print(e)
+
 			case error:
 				log.Print(e)
 			}
 		}
 	}(dc)
+
 	server := sc.Connect()
 	log.Printf("Steam sc connected %s\n", server.String())
+
 	return dc, nil
 }

@@ -12,7 +12,7 @@ import (
 
 const (
 	baseReplayURL = "http://replay%d.valve.net/570/%d_%d.dem.bz2"
-	demosPath     = "internal/data/demos"
+	demosPath     = "demos"
 )
 
 type ValveService struct {
@@ -45,11 +45,13 @@ func (s ValveService) RetrieveFile(match dtos.Match) error {
 		}
 	}
 	filename := fmt.Sprintf("%s/%d.dem", demosPath, match.ID)
+
 	// Check if file exists and in download or parse stage
 	_, err = os.Stat(filename)
 	if err == nil {
 		return FileAlreadyExistsError{filename: filename}
 	}
+
 	// Create a new file to save the decompressed content
 	file, err := os.Create(filename)
 	if err != nil {
@@ -59,6 +61,7 @@ func (s ValveService) RetrieveFile(match dtos.Match) error {
 
 	bufferedWriter := bufio.NewWriter(file)
 	defer bufferedWriter.Flush()
+
 	// Create a bzip2 reader to decompress the content
 	reader := bzip2.NewReader(response.Body)
 

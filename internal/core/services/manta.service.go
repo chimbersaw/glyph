@@ -22,29 +22,34 @@ func NewMantaService() *MantaService {
 }
 
 func (s MantaService) GetGlyphsFromDem(match dtos.Match) ([]models.Glyph, error) {
-	filename := fmt.Sprintf("internal/data/demos/%d.dem", match.ID)
+	filename := fmt.Sprintf("demos/%d.dem", match.ID)
+
 	// Open file to parse
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, OpenFileError{filename: filename, error: err}
 	}
+
 	// Handle defer errors
 	defer func(name string) {
 		if tempErr := os.Remove(name); tempErr != nil {
 			err = RemoveFileError{filename: filename, error: tempErr}
 		}
 	}(filename)
+
 	defer func(f *os.File) {
 		if tempErr := f.Close(); tempErr != nil {
 			err = CloseFileError{filename: filename, error: tempErr}
 		}
 	}(f)
+
 	// Create stream parser
 	p, err := manta.NewStreamParser(f)
 	if err != nil {
 		return nil, ParserCreationError{err}
 	}
 	defer p.Stop()
+
 	// Declare some variables for parsing
 	var (
 		gameCurrentTime, gameStartTime float64
@@ -76,6 +81,7 @@ func (s MantaService) GetGlyphsFromDem(match dtos.Match) ([]models.Glyph, error)
 		}
 		return nil
 	})
+
 	p.OnEntity(func(e *manta.Entity, op manta.EntityOp) error {
 		switch e.GetClassName() {
 		case "CDOTAGamerulesProxy":
@@ -111,6 +117,7 @@ func (s MantaService) GetGlyphsFromDem(match dtos.Match) ([]models.Glyph, error)
 			}
 		}
 	}
+
 	if len(glyphs) == 0 {
 		return glyphs, NoGlyphsError{}
 	}

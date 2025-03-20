@@ -20,17 +20,17 @@ func (r *GlyphRepository) GetGlyphs(matchID int) ([]models.Glyph, error) {
 }
 
 func (r *GlyphRepository) GlyphsExist(matchID int) (bool, error) {
-	var glyph models.Glyph
-	record := r.db.
-		First(&glyph, "match_id = ?", matchID) // TODO
-	if record.Error == gorm.ErrRecordNotFound {
-		return false, nil
+	var count int64
+	result := r.db.Model(&models.Glyph{}).Where("match_id = ?", matchID).Count(&count)
+
+	if result.Error != nil {
+		return false, result.Error
 	}
-	return glyph.MatchID != 0, record.Error
+
+	return count > 0, nil
 }
 
 func (r *GlyphRepository) CreateGlyphs(newGlyphs []models.Glyph) error {
-	record := r.db.
-		Create(newGlyphs)
+	record := r.db.Create(newGlyphs)
 	return record.Error
 }

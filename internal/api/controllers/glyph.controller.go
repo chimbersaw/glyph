@@ -17,7 +17,6 @@ type GoSteamService interface {
 	GetMatchFromGoSteamService(matchID int) (dtos.Match, error)
 }
 
-//
 // type StratzService interface {
 // 	GetMatchFromStratzAPI(matchID int) (dtos.Match, error)
 // }
@@ -74,16 +73,19 @@ func (cr *GlyphController) GetGlyphs(c *fiber.Ctx) error {
 	if err != nil {
 		return errors.New("wrong matchID(cannot convert to integer)")
 	}
+
 	// Check if parsed match is stored in db and retrieve if stored
 	getGlyphes := &dtos.GetGlyphs{MatchID: matchID}
 	glyphParse, err := cr.GlyphService.GetGlyphs(getGlyphes)
 	if err != nil {
 		return err
 	}
+
 	// If match is parsed -> return parsed match
 	if glyphParse.GlyphParsed == true {
 		return c.Status(fiber.StatusOK).JSON(glyphParse.Glyphs)
 	}
+
 	// // If not in db
 	// // Make request to STRATZ API
 	// match, err := cr.StratzService.GetMatchFromStratzAPI(matchID)
@@ -93,26 +95,31 @@ func (cr *GlyphController) GetGlyphs(c *fiber.Ctx) error {
 	// 		return err
 	// 	}
 	// }
+
 	match, err := cr.GoSteamService.GetMatchFromGoSteamService(matchID)
 	if err != nil {
 		return err
 	}
+
 	// Download from valve cluster
 	err = cr.ValveService.RetrieveFile(match)
 	if err != nil {
 		return err
 	}
+
 	// Parse using Manta(Dotabuff golang parser)
 	glyphs, err := cr.MantaService.GetGlyphsFromDem(match)
 	if err != nil {
 		return err
 	}
+
 	// Save parsed match to database
 	createGlyphs := dtos.CreateGlyphs{Glyphs: glyphs}
 	err = cr.GlyphService.CreateGlyphs(&createGlyphs)
 	if err != nil {
 		return err
 	}
+
 	// Return parsed match
 	return c.Status(fiber.StatusCreated).JSON(glyphs)
 }
