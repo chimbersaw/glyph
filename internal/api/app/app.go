@@ -48,5 +48,5 @@ func Run(c *configuration.EnvConfigModel) {
 		port = "8000"
 	}
 
-	log.Fatal(app.Listen(":" + port))
+	log.Fatal(app.Listen("127.0.0.1:" + port))
 }
