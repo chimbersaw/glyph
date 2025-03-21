@@ -61,8 +61,12 @@ func (s MantaService) GetGlyphsFromDem(match dtos.Match) ([]models.Glyph, error)
 		glyphs      []models.Glyph
 		glyph       models.Glyph
 
-		magicTime = 1600.0 // Time when heroes loaded TODO
+		pendingHeroes = make(map[int]bool)
 	)
+
+	for i := 0; i < 10; i++ {
+		pendingHeroes[i] = true
+	}
 
 	p.Callbacks.OnCDOTAUserMsg_SpectatorPlayerUnitOrders(func(m *dota.CDOTAUserMsg_SpectatorPlayerUnitOrders) error {
 		if m.GetOrderType() == int32(dota.DotaunitorderT_DOTA_UNIT_ORDER_GLYPH) {
@@ -95,13 +99,20 @@ func (s MantaService) GetGlyphsFromDem(match dtos.Match) ([]models.Glyph, error)
 				gameCurrentTime = float64((int32(p.NetTick) - totalPausedTicks) / 30)
 			}
 		case "CDOTA_PlayerResource":
-			if gameCurrentTime < magicTime {
-				for i := 0; i < 10; i++ {
-					heroPlayers[i].HeroID, _ = e.GetInt32("m_vecPlayerTeamData.000" + strconv.Itoa(i) + ".m_nSelectedHeroID")
-					heroPlayers[i].PlayerID, _ = e.GetUint64("m_vecPlayerData.000" + strconv.Itoa(i) + ".m_iPlayerSteamID")
+			if len(pendingHeroes) == 0 {
+				return nil
+			}
+
+			for i := range pendingHeroes {
+				heroPlayers[i].PlayerID, _ = e.GetUint64("m_vecPlayerData.000" + strconv.Itoa(i) + ".m_iPlayerSteamID")
+				newHeroID, _ := e.GetUint32("m_vecPlayerTeamData.000" + strconv.Itoa(i) + ".m_nSelectedHeroID")
+				if newHeroID > 0 && newHeroID < 2000000 {
+					heroPlayers[i].HeroID = newHeroID
+					delete(pendingHeroes, i)
 				}
 			}
 		}
+
 		return nil
 	})
 
@@ -112,7 +123,7 @@ func (s MantaService) GetGlyphsFromDem(match dtos.Match) ([]models.Glyph, error)
 	for k := range glyphs {
 		for l := range heroPlayers {
 			if glyphs[k].UserSteamID == strconv.FormatInt(int64(heroPlayers[l].PlayerID), 10) {
-				glyphs[k].HeroID = heroPlayers[l].HeroID
+				glyphs[k].HeroID = heroPlayers[l].HeroID / 2 // idk why
 				break
 			}
 		}

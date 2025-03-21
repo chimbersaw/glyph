@@ -22,6 +22,6 @@ type GlyphParse struct {
 }
 
 type HeroPlayer struct {
-	HeroID   int32
+	HeroID   uint32
 	PlayerID uint64
 }
