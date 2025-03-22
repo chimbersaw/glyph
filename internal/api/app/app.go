@@ -36,8 +36,13 @@ func Run(c *configuration.EnvConfigModel) {
 	app.Use(logger.New())
 
 	//	CORS middleware
+	allowedOrigins := "http://localhost:5173,http://localhost:4173"
+	if c.CorsAllowedOrigins != "" {
+		allowedOrigins += "," + c.CorsAllowedOrigins
+	}
+
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:5173,http://localhost:4173,http://whousedglyph.com,https://whousedglyph.com",
+		AllowOrigins: allowedOrigins,
 		AllowHeaders: "POST",
 	}))
 

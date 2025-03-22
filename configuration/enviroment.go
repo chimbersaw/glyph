@@ -16,6 +16,7 @@ type EnvConfigModel struct {
 	STRATZToken         string `mapstructure:"STRATZ_TOKEN"`
 	SteamLoginUsernames string `mapstructure:"STEAM_LOGIN_USERNAMES"`
 	SteamLoginPasswords string `mapstructure:"STEAM_LOGIN_PASSWORDS"`
+	CorsAllowedOrigins  string `mapstructure:"CORS_ALLOWED_ORIGINS"`
 }
 
 var EnvConfig EnvConfigModel
@@ -31,7 +32,7 @@ func LoadConfig(filePath string) (err error) {
 		}
 	} else {
 		envs := []string{"POSTGRES_HOST", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", "POSTGRES_PORT",
-			"SSL_MODE", "PORT", "STRATZ_TOKEN", "STEAM_LOGIN_USERNAMES", "STEAM_LOGIN_PASSWORDS"}
+			"SSL_MODE", "PORT", "STRATZ_TOKEN", "STEAM_LOGIN_USERNAMES", "STEAM_LOGIN_PASSWORDS", "CORS_ALLOWED_ORIGINS"}
 		for _, env := range envs {
 			if err = viper.BindEnv(env); err != nil {
 				return err
