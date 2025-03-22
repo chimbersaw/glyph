@@ -37,7 +37,7 @@ func Run(c *configuration.EnvConfigModel) {
 
 	//	CORS middleware
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
+		AllowOrigins: "http://localhost:5173,http://localhost:4173,http://whousedglyph.com,https://whousedglyph.com",
 		AllowHeaders: "POST",
 	}))
 
@@ -48,5 +48,5 @@ func Run(c *configuration.EnvConfigModel) {
 		port = "8000"
 	}
 
-	log.Fatal(app.Listen("127.0.0.1:" + port))
+	log.Fatal(app.Listen(":" + port))
 }
