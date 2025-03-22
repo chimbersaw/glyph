@@ -32,6 +32,9 @@ STEAM_LOGIN_PASSWORDS="your_steam_password"
 
 # Cors configuration:
 CORS_ALLOWED_ORIGINS=""
+
+# Server settings:
+SERVER_PORT=8000
 ```
 
 ## Running the Application
