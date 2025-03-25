@@ -34,14 +34,6 @@ func (e NoGlyphsError) Error() string {
 	return fmt.Sprintf("No glyphs found")
 }
 
-type FileAlreadyExistsError struct {
-	filename string
-}
-
-func (e FileAlreadyExistsError) Error() string {
-	return fmt.Sprintf("File %s already exists", e.filename)
-}
-
 type FileCreationError struct {
 	filename string
 	error

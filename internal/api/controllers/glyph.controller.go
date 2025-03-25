@@ -6,6 +6,7 @@ import (
 	"go-glyph/internal/core/dtos"
 	"go-glyph/internal/core/models"
 	"strconv"
+	"sync"
 )
 
 type GlyphService interface {
@@ -40,6 +41,8 @@ type GlyphController struct {
 	// StratzService   StratzService
 	ValveService ValveService
 	MantaService MantaService
+
+	activeMatches sync.Map
 }
 
 func NewGlyphController(glyphService GlyphService, goSteamService GoSteamService,
@@ -50,9 +53,20 @@ func NewGlyphController(glyphService GlyphService, goSteamService GoSteamService
 		GoSteamService: goSteamService,
 		// OpendotaService: opendotaService,
 		// StratzService:   stratzService,
-		ValveService: valveService,
-		MantaService: mantaService,
+		ValveService:  valveService,
+		MantaService:  mantaService,
+		activeMatches: sync.Map{},
 	}
+}
+
+// Returns true if we were able to store (meaning it wasn't already there)
+func (cr *GlyphController) markIfNotProcessing(matchID int) bool {
+	_, loaded := cr.activeMatches.LoadOrStore(matchID, true)
+	return !loaded
+}
+
+func (cr *GlyphController) markMatchAsFinished(matchID int) {
+	cr.activeMatches.Delete(matchID)
 }
 
 // GetGlyphs
@@ -65,6 +79,7 @@ func NewGlyphController(glyphService GlyphService, goSteamService GoSteamService
 //	@Param			matchID					path		string						true	"Match ID"
 //	@Success		200						{object}	[]models.Glyph				"Glyphs from database"
 //	@Success		201						{object}	[]models.Glyph				"Glyphs parsed and save to database"
+//	@Success		202						{object}	dtos.MessageResponseType	"Match is already being processed"
 //	@Failure		400						{object}	dtos.MessageResponseType	"Glyphs parse error"
 //	@Router			/api/glyph/{matchID}	[post]
 func (cr *GlyphController) GetGlyphs(c *fiber.Ctx) error {
@@ -95,6 +110,16 @@ func (cr *GlyphController) GetGlyphs(c *fiber.Ctx) error {
 	// 		return err
 	// 	}
 	// }
+
+	// Atomically try to mark this match as processing
+	if !cr.markIfNotProcessing(matchID) {
+		return c.Status(fiber.StatusAccepted).JSON(
+			dtos.MessageResponseType{Message: "Match is already being processed"},
+		)
+	}
+
+	// Make sure to mark as finished when we're done
+	defer cr.markMatchAsFinished(matchID)
 
 	match, err := cr.GoSteamService.GetMatchFromGoSteamService(matchID)
 	if err != nil {

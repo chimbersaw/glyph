@@ -22,9 +22,6 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 	case services.NoGlyphsError:
 		code = fiber.StatusBadRequest
 		message = e.Error()
-	case services.FileAlreadyExistsError:
-		code = fiber.StatusAccepted
-		message = e.Error()
 	case services.FileCreationError:
 		code = fiber.StatusInternalServerError
 		message = e.Error()

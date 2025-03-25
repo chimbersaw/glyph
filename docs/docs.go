@@ -56,6 +56,12 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "202": {
+                        "description": "Match is already being processed",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.MessageResponseType"
+                        }
+                    },
                     "400": {
                         "description": "Glyphs parse error",
                         "schema": {

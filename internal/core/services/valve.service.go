@@ -46,10 +46,11 @@ func (s ValveService) RetrieveFile(match dtos.Match) error {
 	}
 	filename := fmt.Sprintf("%s/%d.dem", demosPath, match.ID)
 
-	// Check if file exists and in download or parse stage
-	_, err = os.Stat(filename)
-	if err == nil {
-		return FileAlreadyExistsError{filename: filename}
+	// Check if file exists, and if it does, remove it to ensure a fresh download.
+	if _, err := os.Stat(filename); err == nil {
+		if err := os.Remove(filename); err != nil {
+			return RemoveFileError{filename: filename, error: err}
+		}
 	}
 
 	// Create a new file to save the decompressed content
