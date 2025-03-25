@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"github.com/gofiber/fiber/v2"
 	"go-glyph/internal/core/dtos"
 	"go-glyph/internal/core/models"
@@ -86,7 +85,9 @@ func (cr *GlyphController) GetGlyphs(c *fiber.Ctx) error {
 	matchIDString := c.Params("matchID")
 	matchID, err := strconv.Atoi(matchIDString)
 	if err != nil {
-		return errors.New("wrong matchID(cannot convert to integer)")
+		return c.Status(fiber.StatusBadRequest).JSON(
+			dtos.MessageResponseType{Message: "Match ID is not an integer"},
+		)
 	}
 
 	// Check if parsed match is stored in db and retrieve if stored

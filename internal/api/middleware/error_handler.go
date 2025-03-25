@@ -13,14 +13,14 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 	case services.ValidateError:
 		code = fiber.StatusBadRequest
 		message = e.Error()
-	case services.RepositoryError:
-		code = fiber.StatusBadRequest
-		message = e.Error()
-	case services.MatchAlreadyParsedError:
-		code = fiber.StatusBadRequest
-		message = e.Error()
 	case services.NoGlyphsError:
 		code = fiber.StatusBadRequest
+		message = e.Error()
+	case services.RepositoryError:
+		code = fiber.StatusInternalServerError
+		message = e.Error()
+	case services.MatchAlreadyParsedError:
+		code = fiber.StatusInternalServerError
 		message = e.Error()
 	case services.FileCreationError:
 		code = fiber.StatusInternalServerError
