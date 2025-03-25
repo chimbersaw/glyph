@@ -41,7 +41,7 @@ func (s ValveService) RetrieveFile(match dtos.Match) error {
 	if _, err := os.Stat(demosPath); os.IsNotExist(err) {
 		err := os.Mkdir(demosPath, os.ModePerm)
 		if err != nil {
-			return FolderCreationError{foldername: demosPath}
+			return FolderCreationError{foldername: demosPath, error: err}
 		}
 	}
 	filename := fmt.Sprintf("%s/%d.dem", demosPath, match.ID)
@@ -55,7 +55,7 @@ func (s ValveService) RetrieveFile(match dtos.Match) error {
 	// Create a new file to save the decompressed content
 	file, err := os.Create(filename)
 	if err != nil {
-		return FileCreationError{filename: filename}
+		return FileCreationError{filename: filename, error: err}
 	}
 	defer file.Close()
 
@@ -68,7 +68,10 @@ func (s ValveService) RetrieveFile(match dtos.Match) error {
 	// Copy the decompressed content to the file
 	_, err = io.Copy(bufferedWriter, reader)
 	if err != nil {
-		return CopyError{}
+		_ = bufferedWriter.Flush()
+		_ = file.Close()
+		_ = os.Remove(filename)
+		return CopyError{err}
 	}
 
 	// Decompression completed
