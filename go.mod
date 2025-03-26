@@ -4,6 +4,8 @@ go 1.24
 
 toolchain go1.24.1
 
+replace github.com/paralin/go-dota2 => github.com/voltageeee/go-dota2 v0.0.0-20250314113547-acb2b5970f4c
+
 require (
 	github.com/dotabuff/manta v1.4.5
 	github.com/go-playground/validator/v10 v10.25.0
@@ -13,7 +15,7 @@ require (
 	github.com/paralin/go-dota2 v0.0.0-20241218071341-eca341841669
 	github.com/paralin/go-steam v0.0.0-20231025185642-e7c8d97e052a
 	github.com/sirupsen/logrus v1.9.3
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	github.com/swaggo/swag v1.16.4
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	gorm.io/driver/postgres v1.5.11
