@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"go-glyph/internal/core/dtos"
 	"io"
+	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 const (
@@ -24,6 +26,8 @@ func NewValveService() *ValveService {
 }
 
 func (s ValveService) RetrieveFile(match dtos.Match) error {
+	startTime := time.Now()
+
 	url := fmt.Sprintf(baseReplayURL, match.Cluster, match.ID, match.ReplaySalt)
 	response, err := s.client.Get(url)
 	if err != nil {
@@ -74,6 +78,10 @@ func (s ValveService) RetrieveFile(match dtos.Match) error {
 		_ = os.Remove(filename)
 		return CopyError{err}
 	}
+
+	// Log the time it took to download and decompress
+	duration := time.Since(startTime)
+	log.Printf("Downloaded and decompressed file %s in %v", filename, duration)
 
 	// Decompression completed
 	return nil

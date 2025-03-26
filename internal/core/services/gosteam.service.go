@@ -113,12 +113,10 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails) (*dota2.Dota2, error) {
 				log.Printf("LogOn failed. Reason: %v\n", e.Result)
 
 			case *events.GCConnectionStatusChanged:
+				log.Println("New connection status:", e.NewState)
 				isReady := e.NewState == protocol.GCConnectionStatus_GCConnectionStatus_HAVE_SESSION
 				if !isReady {
-					log.Println("GCConnectionStatusChanged: Not ready")
 					dc.SayHello()
-				} else {
-					log.Println("GCConnectionStatusChanged")
 				}
 
 			case *steam.AccountInfoEvent:
