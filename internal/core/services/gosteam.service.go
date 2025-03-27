@@ -42,9 +42,16 @@ func NewGoSteamService(usernames, passwords string) *GoSteamService {
 		log.Fatal(err)
 	}
 
-	return &GoSteamService{
-		steamClient: sc, dotaClient: dc, steamLoginInfos: steamLoginInfos, counter: 1, lock: sync.Mutex{},
+	service := &GoSteamService{
+		steamClient:     sc,
+		dotaClient:      dc,
+		steamLoginInfos: steamLoginInfos,
+		counter:         1,
+		lock:            sync.Mutex{},
 	}
+	service.startKeepAlive()
+
+	return service
 }
 
 func (s *GoSteamService) GetMatchDetails(matchID int) (dtos.Match, error) {
@@ -107,6 +114,19 @@ func (s *GoSteamService) changeClient() error {
 	s.counter++
 
 	return nil
+}
+
+func (s *GoSteamService) startKeepAlive() {
+	// Keep-alive every 3 minutes to reinitialize the client if it's not ready
+	go func() {
+		ticker := time.NewTicker(3 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			if _, err := s.GetMatchDetails(123); err != nil {
+				log.Printf("Keep-alive error: %v", err)
+			}
+		}
+	}()
 }
 
 func initDotaClient(steamLoginInfo *steam.LogOnDetails) (*steam.Client, *dota2.Dota2, error) {
