@@ -26,6 +26,10 @@ func NewValveService() *ValveService {
 }
 
 func (s ValveService) RetrieveFile(match dtos.Match) error {
+	if match.Cluster == 0 {
+		return ValidateError{fmt.Errorf("match id is invalid")}
+	}
+
 	startTime := time.Now()
 
 	url := fmt.Sprintf(baseReplayURL, match.Cluster, match.ID, match.ReplaySalt)
