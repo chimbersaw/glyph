@@ -53,5 +53,6 @@ func Run(c *configuration.EnvConfigModel) {
 		port = "8000"
 	}
 
+	log.Printf("Starting server on port %s", port)
 	log.Fatal(app.Listen(":" + port))
 }

@@ -14,7 +14,7 @@ type GlyphService interface {
 }
 
 type GoSteamService interface {
-	GetMatchFromGoSteamService(matchID int) (dtos.Match, error)
+	GetMatchDetails(matchID int) (dtos.Match, error)
 }
 
 // type StratzService interface {
@@ -122,7 +122,7 @@ func (cr *GlyphController) GetGlyphs(c *fiber.Ctx) error {
 	// Make sure to mark as finished when we're done
 	defer cr.markMatchAsFinished(matchID)
 
-	match, err := cr.GoSteamService.GetMatchFromGoSteamService(matchID)
+	match, err := cr.GoSteamService.GetMatchDetails(matchID)
 	if err != nil {
 		return err
 	}
