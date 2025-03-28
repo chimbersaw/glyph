@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"compress/bzip2"
 	"fmt"
+	"github.com/gofiber/fiber/v2"
 	"go-glyph/internal/core/dtos"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -27,7 +29,7 @@ func NewValveService() *ValveService {
 
 func (s ValveService) RetrieveFile(match dtos.Match) error {
 	if match.Cluster == 0 {
-		return ValidateError{fmt.Errorf("match id is invalid")}
+		return UserFacingError{Code: fiber.StatusNotFound, Message: "Match id is invalid"}
 	}
 
 	startTime := time.Now()
@@ -42,7 +44,13 @@ func (s ValveService) RetrieveFile(match dtos.Match) error {
 		if err != nil {
 			return ReadResponseBodyError{err}
 		}
-		return HTTPError{url: url, statusCode: response.StatusCode, response: string(body)}
+
+		bodyStr := string(body)
+		if strings.Contains(bodyStr, "Error: 2010") {
+			return UserFacingError{Code: fiber.StatusNotFound, Message: "Match is too old :("}
+		}
+
+		return HTTPError{url: url, statusCode: response.StatusCode, response: bodyStr}
 	}
 	defer response.Body.Close()
 

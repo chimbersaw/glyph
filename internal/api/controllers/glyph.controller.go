@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go-glyph/internal/core/dtos"
 	"go-glyph/internal/core/models"
+	"go-glyph/internal/core/services"
 	"strconv"
 	"sync"
 )
@@ -85,9 +86,7 @@ func (cr *GlyphController) GetGlyphs(c *fiber.Ctx) error {
 	matchIDString := c.Params("matchID")
 	matchID, err := strconv.Atoi(matchIDString)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(
-			dtos.MessageResponseType{Message: "Match ID is not an integer"},
-		)
+		return services.UserFacingError{Code: fiber.StatusBadRequest, Message: "Match ID is not an integer"}
 	}
 
 	// Check if parsed match is stored in db and retrieve if stored
@@ -114,9 +113,7 @@ func (cr *GlyphController) GetGlyphs(c *fiber.Ctx) error {
 
 	// Atomically try to mark this match as processing
 	if !cr.markIfNotProcessing(matchID) {
-		return c.Status(fiber.StatusAccepted).JSON(
-			dtos.MessageResponseType{Message: "Match is already being processed"},
-		)
+		return services.UserFacingError{Code: fiber.StatusAccepted, Message: "Match is already being processed"}
 	}
 
 	// Make sure to mark as finished when we're done

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/gofiber/fiber/v2"
 	"github.com/paralin/go-dota2"
 	"github.com/paralin/go-dota2/events"
 	"github.com/paralin/go-dota2/protocol"
@@ -77,7 +78,8 @@ func (s *GoSteamService) GetMatchDetails(matchID int) (dtos.Match, error) {
 		}
 	}
 
-	return dtos.Match{}, fmt.Errorf("could not get match details after %d attempts", maxRetries)
+	log.Printf("Could not get match details after %d attempts", maxRetries)
+	return dtos.Match{}, UserFacingError{Code: fiber.StatusServiceUnavailable, Message: "Error connecting to dota servers :(\nPlease try again later"}
 }
 
 func (s *GoSteamService) getMatchFromSteam(matchID int) (dtos.Match, error) {

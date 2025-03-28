@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"github.com/gofiber/fiber/v2"
 	"math"
 	"os"
 	"strconv"
@@ -130,7 +131,8 @@ func (s MantaService) GetGlyphsFromDem(match dtos.Match) ([]models.Glyph, error)
 	}
 
 	if len(glyphs) == 0 {
-		return glyphs, NoGlyphsError{}
+		return glyphs, UserFacingError{Code: fiber.StatusNotFound, Message: "No glyphs found lol"}
 	}
+
 	return glyphs, err
 }

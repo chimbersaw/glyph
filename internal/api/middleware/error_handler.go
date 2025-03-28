@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"go-glyph/internal/core/dtos"
 	"go-glyph/internal/core/services"
 )
 
@@ -10,10 +11,9 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 	message := "Internal Server Error"
 
 	switch e := err.(type) {
+	case services.UserFacingError:
+		return c.Status(e.Code).JSON(dtos.MessageResponseType{Message: e.Message})
 	case services.ValidateError:
-		code = fiber.StatusBadRequest
-		message = e.Error()
-	case services.NoGlyphsError:
 		code = fiber.StatusBadRequest
 		message = e.Error()
 	case services.RepositoryError:

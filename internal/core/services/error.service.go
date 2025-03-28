@@ -4,6 +4,15 @@ import (
 	"fmt"
 )
 
+type UserFacingError struct {
+	Code    int
+	Message string
+}
+
+func (e UserFacingError) Error() string {
+	return e.Message
+}
+
 type ValidateError struct {
 	error
 }
@@ -25,13 +34,6 @@ type MatchAlreadyParsedError struct {
 
 func (e MatchAlreadyParsedError) Error() string {
 	return fmt.Sprintf("Match already parsed (File parsed when request were done).")
-}
-
-type NoGlyphsError struct {
-}
-
-func (e NoGlyphsError) Error() string {
-	return fmt.Sprintf("No glyphs found")
 }
 
 type FileCreationError struct {
