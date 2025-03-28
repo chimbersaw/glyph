@@ -42,12 +42,14 @@ func (s ValveService) RetrieveFile(match dtos.Match) error {
 	if response.StatusCode != 200 {
 		body, err := io.ReadAll(response.Body)
 		if err != nil {
+			log.Printf("HTTP body read error to %s with status code %d", url, response.StatusCode)
 			return ReadResponseBodyError{err}
 		}
 
 		bodyStr := string(body)
 		if strings.Contains(bodyStr, "Error: 2010") {
-			return UserFacingError{Code: fiber.StatusNotFound, Message: "Match is too old :("}
+			log.Printf("HTTP error to %s with status code %d and body: %s", url, response.StatusCode, bodyStr)
+			return UserFacingError{Code: fiber.StatusNotFound, Message: "Match is too new or too old :("}
 		}
 
 		return HTTPError{url: url, statusCode: response.StatusCode, response: bodyStr}
