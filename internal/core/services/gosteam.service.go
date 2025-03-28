@@ -126,6 +126,8 @@ func (s *GoSteamService) startKeepAlive() {
 		for range ticker.C {
 			if _, err := s.GetMatchDetails(123); err != nil {
 				log.Printf("Keep-alive error: %v", err)
+			} else {
+				log.Println("Keep-alive success")
 			}
 		}
 	}()
