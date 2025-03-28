@@ -70,7 +70,7 @@ func (s *GoSteamService) GetMatchDetails(matchID int) (dtos.Match, error) {
 			return dtos.Match{}, err
 		}
 
-		log.Println("Error connecting to dota, changing client...")
+		log.Printf("Error connecting to dota: %v, changing client...", err)
 		err = s.changeClient()
 		time.Sleep(1 * time.Second)
 		if err != nil {
@@ -79,7 +79,7 @@ func (s *GoSteamService) GetMatchDetails(matchID int) (dtos.Match, error) {
 	}
 
 	log.Printf("Could not get match details after %d attempts", maxRetries)
-	return dtos.Match{}, UserFacingError{Code: fiber.StatusServiceUnavailable, Message: "Error connecting to dota servers :(\nPlease try again later"}
+	return dtos.Match{}, UserFacingError{Code: fiber.StatusServiceUnavailable, Message: "Error connecting to dota servers :( Please try again later"}
 }
 
 func (s *GoSteamService) getMatchFromSteam(matchID int) (dtos.Match, error) {
@@ -119,9 +119,9 @@ func (s *GoSteamService) changeClient() error {
 }
 
 func (s *GoSteamService) startKeepAlive() {
-	// Keep-alive every 3 minutes to reinitialize the client if it's not ready
+	// Keep-alive every 1 hour to reinitialize the client if it's not ready
 	go func() {
-		ticker := time.NewTicker(3 * time.Minute)
+		ticker := time.NewTicker(1 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
 			if _, err := s.GetMatchDetails(123); err != nil {
