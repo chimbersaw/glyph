@@ -15,14 +15,14 @@ See swagger page for more information.
 * Golang 1.24 or higher
 * Have a PostgreSQL database running
 * Steam account with Dota 2
-* Create `.env` file in the root directory with:
+* Create `.env` file in the root directory with (also see [.env.example](.env.example)):
 
 ```
 # Database settings:
-POSTGRES_HOST="hostname"
+POSTGRES_HOST="localhost"
 POSTGRES_USER="postgres"
 POSTGRES_PASSWORD="postgres"
-POSTGRES_DB="postgres"
+POSTGRES_DB="whousedglyph"
 POSTGRES_PORT=5432
 SSL_MODE="disable"
 
