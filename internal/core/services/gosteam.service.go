@@ -124,11 +124,13 @@ func (s *GoSteamService) startKeepAlive() {
 		ticker := time.NewTicker(1 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
+			log.Printf("Connected status before: %v", s.steamClient.Connected())
 			if _, err := s.GetMatchDetails(123); err != nil {
 				log.Printf("Keep-alive error: %v", err)
 			} else {
 				log.Println("Keep-alive success")
 			}
+			log.Printf("Connected status after: %v", s.steamClient.Connected())
 		}
 	}()
 }
@@ -177,6 +179,9 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails) (*steam.Client, *dota2.D
 
 			case *steam.AccountInfoEvent:
 				fmt.Println(e.AccountFlags)
+
+			case *steam.DisconnectedEvent:
+				log.Printf("Disconnected from Steam :(")
 
 			case steam.FatalErrorEvent:
 				log.Print(e)
