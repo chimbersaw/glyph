@@ -125,7 +125,7 @@ func (s *GoSteamService) startKeepAlive() {
 		defer ticker.Stop()
 		for range ticker.C {
 			log.Printf("Connected status before: %v", s.steamClient.Connected())
-			if _, err := s.GetMatchDetails(123); err != nil {
+			if _, err := s.GetMatchDetails(239); err != nil {
 				log.Printf("Keep-alive error: %v", err)
 			} else {
 				log.Println("Keep-alive success")
