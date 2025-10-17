@@ -19,11 +19,13 @@ import (
 )
 
 type GoSteamService struct {
-	steamClient     *steam.Client
-	dotaClient      *dota2.Dota2
-	steamLoginInfos []*steam.LogOnDetails
-	counter         uint
-	lock            sync.Mutex
+	steamClient       *steam.Client
+	dotaClient        *dota2.Dota2
+	steamLoginInfos   []*steam.LogOnDetails
+	counter           uint
+	lock              sync.Mutex
+	keepAliveTicker   *time.Ticker
+	keepAliveTickerMu sync.Mutex
 }
 
 func NewGoSteamService(usernames, passwords string) *GoSteamService {
@@ -38,18 +40,19 @@ func NewGoSteamService(usernames, passwords string) *GoSteamService {
 	}
 	steamLoginInfo := steamLoginInfos[0]
 
-	sc, dc, err := initDotaClient(steamLoginInfo)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	service := &GoSteamService{
-		steamClient:     sc,
-		dotaClient:      dc,
 		steamLoginInfos: steamLoginInfos,
 		counter:         1,
 		lock:            sync.Mutex{},
 	}
+
+	sc, dc, err := initDotaClient(steamLoginInfo, service.onDisconnected)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	service.steamClient = sc
+	service.dotaClient = dc
 	service.startKeepAlive()
 
 	return service
@@ -106,7 +109,9 @@ func (s *GoSteamService) changeClient() error {
 		s.counter = 0
 	}
 
-	sc, dc, err := initDotaClient(s.steamLoginInfos[s.counter])
+	loginInfo := s.steamLoginInfos[s.counter]
+	log.Printf("Switching to client %s", loginInfo.Username)
+	sc, dc, err := initDotaClient(loginInfo, s.onDisconnected)
 	if err != nil {
 		return err
 	}
@@ -120,22 +125,50 @@ func (s *GoSteamService) changeClient() error {
 
 func (s *GoSteamService) startKeepAlive() {
 	// Keep-alive every 1 hour to reinitialize the client if it's not ready
+	ticker := time.NewTicker(1 * time.Hour)
+	s.keepAliveTickerMu.Lock()
+	s.keepAliveTicker = ticker
+	s.keepAliveTickerMu.Unlock()
+
 	go func() {
-		ticker := time.NewTicker(1 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
-			log.Printf("Connected status before: %v", s.steamClient.Connected())
-			if _, err := s.GetMatchDetails(239); err != nil {
-				log.Printf("Keep-alive error: %v", err)
-			} else {
-				log.Println("Keep-alive success")
-			}
-			log.Printf("Connected status after: %v", s.steamClient.Connected())
+			s.runKeepAlive()
 		}
 	}()
 }
 
-func initDotaClient(steamLoginInfo *steam.LogOnDetails) (*steam.Client, *dota2.Dota2, error) {
+func (s *GoSteamService) runKeepAlive() {
+	log.Printf("Connected status before: %v", s.steamClient.Connected())
+
+	if _, err := s.GetMatchDetails(123); err != nil {
+		log.Printf("Keep-alive error: %v", err)
+	} else {
+		log.Println("Keep-alive success")
+	}
+
+	log.Printf("Connected status after: %v", s.steamClient.Connected())
+}
+
+func (s *GoSteamService) onDisconnected() {
+	go func() {
+		log.Println("Scheduling keep-alive after disconnect in 5s")
+		time.Sleep(5 * time.Second)
+		if s.steamClient == nil {
+			return
+		}
+
+		s.keepAliveTickerMu.Lock()
+		defer s.keepAliveTickerMu.Unlock()
+		if s.keepAliveTicker != nil {
+			s.keepAliveTicker.Reset(1 * time.Hour)
+		}
+
+		s.runKeepAlive()
+	}()
+}
+
+func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (*steam.Client, *dota2.Dota2, error) {
 	sc := steam.NewClient()
 	if err := steam.InitializeSteamDirectory(); err != nil {
 		return nil, nil, err
@@ -182,6 +215,9 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails) (*steam.Client, *dota2.D
 
 			case *steam.DisconnectedEvent:
 				log.Printf("Disconnected from Steam :(")
+				if onDisconnected != nil {
+					onDisconnected()
+				}
 
 			case steam.FatalErrorEvent:
 				log.Print(e)
