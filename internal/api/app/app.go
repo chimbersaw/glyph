@@ -30,7 +30,12 @@ func Run(c *configuration.EnvConfigModel) {
 
 	glyphRouter := routers.NewGlyphRouter(glyphController)
 
-	app := fiber.New(fiber.Config{ErrorHandler: middleware.ErrorHandler})
+	app := fiber.New(fiber.Config{
+		ErrorHandler:            middleware.ErrorHandler,
+		ProxyHeader:             fiber.HeaderXForwardedFor,
+		EnableTrustedProxyCheck: true,
+		TrustedProxies:          []string{"127.0.0.1", "::1"},
+	})
 
 	//	Logger middleware for logging HTTP request/response details
 	app.Use(logger.New())
