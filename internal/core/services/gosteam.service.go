@@ -106,12 +106,13 @@ func (s *GoSteamService) changeClient() error {
 	s.steamClient.Disconnect()
 	time.Sleep(3 * time.Second)
 
+	loginInfo := s.steamLoginInfos[s.counter]
+	s.counter++
 	if s.counter >= uint(len(s.steamLoginInfos)) {
 		s.counter = 0
 	}
 
-	loginInfo := s.steamLoginInfos[s.counter]
-	log.Printf("Switching to client %s", loginInfo.Username)
+	log.Printf("Switching to client `%s`", loginInfo.Username)
 	sc, dc, err := initDotaClient(loginInfo, s.onDisconnected)
 	if err != nil {
 		return err
@@ -119,7 +120,6 @@ func (s *GoSteamService) changeClient() error {
 
 	s.steamClient = sc
 	s.dotaClient = dc
-	s.counter++
 
 	return nil
 }
