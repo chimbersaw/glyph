@@ -26,6 +26,7 @@ type GoSteamService struct {
 	lock              sync.Mutex
 	keepAliveTicker   *time.Ticker
 	keepAliveTickerMu sync.Mutex
+	keepAliveRequests chan struct{}
 }
 
 func NewGoSteamService(usernames, passwords string) *GoSteamService {
@@ -130,12 +131,32 @@ func (s *GoSteamService) startKeepAlive() {
 	s.keepAliveTicker = ticker
 	s.keepAliveTickerMu.Unlock()
 
+	s.keepAliveRequests = make(chan struct{}, 1)
+
 	go func() {
-		defer ticker.Stop()
-		for range ticker.C {
+		for range s.keepAliveRequests {
 			s.runKeepAlive()
 		}
 	}()
+
+	go func() {
+		defer ticker.Stop()
+		for range ticker.C {
+			s.requestKeepAlive()
+		}
+	}()
+}
+
+func (s *GoSteamService) requestKeepAlive() {
+	if s.keepAliveRequests == nil {
+		return
+	}
+
+	// Non-blocking enqueue
+	select {
+	case s.keepAliveRequests <- struct{}{}:
+	default:
+	}
 }
 
 func (s *GoSteamService) runKeepAlive() {
@@ -152,19 +173,19 @@ func (s *GoSteamService) runKeepAlive() {
 
 func (s *GoSteamService) onDisconnected() {
 	go func() {
-		log.Println("Scheduling keep-alive after disconnect in 5s")
+		log.Println("Requesting keep-alive after disconnect in 5s")
 		time.Sleep(5 * time.Second)
 		if s.steamClient == nil {
 			return
 		}
 
 		s.keepAliveTickerMu.Lock()
-		defer s.keepAliveTickerMu.Unlock()
 		if s.keepAliveTicker != nil {
 			s.keepAliveTicker.Reset(1 * time.Hour)
 		}
+		s.keepAliveTickerMu.Unlock()
 
-		s.runKeepAlive()
+		s.requestKeepAlive()
 	}()
 }
 
