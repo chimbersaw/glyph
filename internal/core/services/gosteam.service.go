@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/paralin/go-dota2"
 	"github.com/paralin/go-dota2/events"
@@ -43,7 +42,7 @@ func NewGoSteamService(usernames, passwords string) *GoSteamService {
 
 	service := &GoSteamService{
 		steamLoginInfos: steamLoginInfos,
-		counter:         1,
+		counter:         0,
 		lock:            sync.Mutex{},
 	}
 
@@ -106,11 +105,11 @@ func (s *GoSteamService) changeClient() error {
 	s.steamClient.Disconnect()
 	time.Sleep(3 * time.Second)
 
-	loginInfo := s.steamLoginInfos[s.counter]
 	s.counter++
 	if s.counter >= uint(len(s.steamLoginInfos)) {
 		s.counter = 0
 	}
+	loginInfo := s.steamLoginInfos[s.counter]
 
 	log.Printf("Switching to client `%s`", loginInfo.Username)
 	sc, dc, err := initDotaClient(loginInfo, s.onDisconnected)
@@ -160,15 +159,15 @@ func (s *GoSteamService) requestKeepAlive() {
 }
 
 func (s *GoSteamService) runKeepAlive() {
-	log.Printf("Connected status before: %v", s.steamClient.Connected())
+	if !s.steamClient.Connected() {
+		log.Println("Steam client not connected, running keep-alive...")
+	}
 
-	if _, err := s.GetMatchDetails(123); err != nil {
+	if _, err := s.GetMatchDetails(239); err != nil {
 		log.Printf("Keep-alive error: %v", err)
 	} else {
 		log.Println("Keep-alive success")
 	}
-
-	log.Printf("Connected status after: %v", s.steamClient.Connected())
 }
 
 func (s *GoSteamService) onDisconnected() {
@@ -192,6 +191,7 @@ func (s *GoSteamService) onDisconnected() {
 func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (*steam.Client, *dota2.Dota2, error) {
 	sc := steam.NewClient()
 	if err := steam.InitializeSteamDirectory(); err != nil {
+		log.Println("Failed to initialize Steam directory:", err)
 		return nil, nil, err
 	}
 
@@ -205,7 +205,7 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (
 			switch e := event.(type) {
 
 			case *steam.ConnectedEvent:
-				fmt.Println("Connected, attempting to log in...")
+				log.Println("Connected, attempting to log in...")
 				sc.Auth.LogOn(steamLoginInfo)
 
 			case *steam.LoggedOnEvent:
@@ -232,7 +232,7 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (
 				}
 
 			case *steam.AccountInfoEvent:
-				fmt.Println(e.AccountFlags)
+				log.Println(e.AccountFlags)
 
 			case *steam.DisconnectedEvent:
 				log.Printf("Disconnected from Steam :(")
