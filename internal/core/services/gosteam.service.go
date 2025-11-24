@@ -3,6 +3,12 @@ package services
 import (
 	"context"
 	"errors"
+	"go-glyph/internal/core/dtos"
+	"log"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/paralin/go-dota2"
 	"github.com/paralin/go-dota2/events"
@@ -10,11 +16,6 @@ import (
 	"github.com/paralin/go-steam"
 	"github.com/paralin/go-steam/protocol/steamlang"
 	"github.com/sirupsen/logrus"
-	"go-glyph/internal/core/dtos"
-	"log"
-	"strings"
-	"sync"
-	"time"
 )
 
 type GoSteamService struct {

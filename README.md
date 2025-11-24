@@ -12,7 +12,7 @@ See swagger page for more information.
 
 ## Prerequisites
 
-* Golang 1.24 or higher
+* Golang 1.25 or higher
 * Have a PostgreSQL database running
 * Steam account with Dota 2
 * Create `.env` file in the root directory with (also see [.env.example](.env.example)):
