@@ -14,6 +14,8 @@ import (
 	"github.com/paralin/go-dota2/events"
 	"github.com/paralin/go-dota2/protocol"
 	"github.com/paralin/go-steam"
+	steamproto "github.com/paralin/go-steam/protocol"
+	steampb "github.com/paralin/go-steam/protocol/protobuf"
 	"github.com/paralin/go-steam/protocol/steamlang"
 	"github.com/sirupsen/logrus"
 )
@@ -103,8 +105,7 @@ func (s *GoSteamService) getMatchFromSteam(matchID int) (dtos.Match, error) {
 }
 
 func (s *GoSteamService) changeClient() error {
-	s.steamClient.Disconnect()
-	time.Sleep(3 * time.Second)
+	s.gracefulDisconnect()
 
 	s.counter++
 	if s.counter >= uint(len(s.steamLoginInfos)) {
@@ -192,8 +193,7 @@ func (s *GoSteamService) onDisconnected() {
 func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (*steam.Client, *dota2.Dota2, error) {
 	sc := steam.NewClient()
 	if err := steam.InitializeSteamDirectory(); err != nil {
-		log.Println("Failed to initialize Steam directory:", err)
-		return nil, nil, err
+		log.Println("Failed to initialize Steam directory, falling back to static CM list:", err)
 	}
 
 	dc := dota2.New(sc, logrus.New())
@@ -261,4 +261,21 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (
 	case <-time.After(15 * time.Second):
 		return nil, nil, errors.New("timeout waiting for Dota client to connect")
 	}
+}
+
+func (s *GoSteamService) gracefulDisconnect() {
+	if s.steamClient == nil {
+		return
+	}
+
+	if s.dotaClient != nil {
+		s.dotaClient.SetPlaying(false)
+	}
+
+	if s.steamClient.Connected() {
+		s.steamClient.Social.SetPersonaState(steamlang.EPersonaState_Offline)
+		s.steamClient.Write(steamproto.NewClientMsgProtobuf(steamlang.EMsg_ClientLogOff, new(steampb.CMsgClientLogOff)))
+		time.Sleep(250 * time.Millisecond)
+	}
+	s.steamClient.Disconnect()
 }
