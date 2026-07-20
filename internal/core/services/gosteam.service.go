@@ -207,7 +207,9 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (
 
 			case *steam.ConnectedEvent:
 				log.Println("Connected, attempting to log in...")
-				sc.Auth.LogOn(steamLoginInfo)
+				if err := sc.Auth.LogOn(context.Background(), steamLoginInfo); err != nil {
+					log.Printf("LogOn failed: %v", err)
+				}
 
 			case *steam.LoggedOnEvent:
 				log.Println("Logging in...")
