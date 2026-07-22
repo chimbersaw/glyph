@@ -1,8 +1,8 @@
 module go-glyph
 
-go 1.25.0
+go 1.26.0
 
-toolchain go1.25.4
+toolchain go1.26.5
 
 require (
 	github.com/dotabuff/manta v1.5.0
@@ -10,12 +10,11 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.14
 	github.com/gofiber/swagger v1.1.1
 	github.com/machinebox/graphql v0.2.2
-	github.com/paralin/go-dota2 v0.0.0-20260713114403-669c0672b1a2
-	github.com/paralin/go-steam v0.0.0-20260627095526-9a903700fc88
-	github.com/sirupsen/logrus v1.9.5-0.20260629095817-a23d315dfebb
+	github.com/sicdex/go-steam-ws v0.0.0-20260624181541-66895d5a1c9a
 	github.com/spf13/viper v1.21.0
 	github.com/swaggo/swag v1.16.6
 	golang.org/x/exp v0.0.0-20260718201538-764159d718ef
+	google.golang.org/protobuf v1.36.11
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.2
 )
@@ -23,15 +22,13 @@ require (
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/andybalholm/brotli v1.2.2 // indirect
-	github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4 // indirect
-	github.com/aperturerobotics/protobuf-go-lite v0.15.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
 	github.com/go-openapi/jsonreference v1.0.0 // indirect
-	github.com/go-openapi/spec v0.22.8 // indirect
+	github.com/go-openapi/spec v0.22.9 // indirect
 	github.com/go-openapi/swag/conv v0.27.3 // indirect
 	github.com/go-openapi/swag/jsonutils v0.27.3 // indirect
 	github.com/go-openapi/swag/loading v0.27.3 // indirect
@@ -45,6 +42,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.10.0 // indirect
@@ -74,5 +72,4 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
 )
