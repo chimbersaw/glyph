@@ -3,26 +3,25 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"go-glyph/internal/core/dtos"
 	"log"
+	"net"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/paralin/go-dota2"
-	"github.com/paralin/go-dota2/events"
-	"github.com/paralin/go-dota2/protocol"
-	"github.com/paralin/go-steam"
-	steamproto "github.com/paralin/go-steam/protocol"
-	steampb "github.com/paralin/go-steam/protocol/protobuf"
-	"github.com/paralin/go-steam/protocol/steamlang"
-	"github.com/sirupsen/logrus"
+	"github.com/sicdex/go-steam-ws"
+	steamproto "github.com/sicdex/go-steam-ws/protocol"
+	steampb "github.com/sicdex/go-steam-ws/protocol/protobuf"
+	"github.com/sicdex/go-steam-ws/protocol/steamlang"
 )
 
 type GoSteamService struct {
 	steamClient       *steam.Client
-	dotaClient        *dota2.Dota2
+	dotaClient        *dotaGCClient
 	steamLoginInfos   []*steam.LogOnDetails
 	counter           uint
 	lock              sync.Mutex
@@ -72,7 +71,7 @@ func (s *GoSteamService) GetMatchDetails(matchID int) (dtos.Match, error) {
 			return match, nil
 		}
 
-		if !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, dota2.ErrNotReady) {
+		if !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, errDotaNotReady) {
 			return dtos.Match{}, err
 		}
 
@@ -190,16 +189,26 @@ func (s *GoSteamService) onDisconnected() {
 	}()
 }
 
-func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (*steam.Client, *dota2.Dota2, error) {
+func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (*steam.Client, *dotaGCClient, error) {
 	sc := steam.NewClient()
-	if err := steam.InitializeSteamDirectory(); err != nil {
-		log.Println("Failed to initialize Steam directory, falling back to static CM list:", err)
+	dialer := &net.Dialer{Timeout: 8 * time.Second, KeepAlive: 30 * time.Second}
+	sc.Dialer = dialer.Dial
+	dc := newDotaGCClient(sc)
+	connectionErrors := make(chan error, 1)
+	helloRetryCtx, stopHelloRetry := context.WithCancel(context.Background())
+	defer stopHelloRetry()
+	reportConnectionError := func(err error) {
+		select {
+		case connectionErrors <- err:
+		default:
+		}
 	}
 
-	dc := dota2.New(sc, logrus.New())
-
-	// Channel to signal that the Dota client has a valid GC session
-	ready := make(chan struct{}, 1)
+	server, err := connectSteamWebSocket(sc)
+	if err != nil {
+		return nil, nil, err
+	}
+	log.Printf("Steam client connected to websocket server %s\n", server)
 
 	go func() {
 		for event := range sc.Events() {
@@ -207,60 +216,127 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (
 
 			case *steam.ConnectedEvent:
 				log.Println("Connected, attempting to log in...")
-				sc.Auth.LogOn(steamLoginInfo)
+				go func() {
+					authResult, err := sc.Authentication.LogOnWithCredentials(steamLoginInfo.Username, steamLoginInfo.Password)
+					if err != nil {
+						reportConnectionError(fmt.Errorf("steam credential authentication failed: %w", err))
+						return
+					}
+					sc.Auth.LogOn(&steam.LogOnDetails{
+						Username:    authResult.AccountName,
+						AccessToken: authResult.RefreshToken,
+					})
+				}()
 
 			case *steam.LoggedOnEvent:
-				log.Println("Logging in...")
+				if e.Result != steamlang.EResult_OK {
+					reportConnectionError(fmt.Errorf("steam logon failed: %v", e.Result))
+					continue
+				}
+				log.Println("Logged in to Steam")
 				sc.Social.SetPersonaState(steamlang.EPersonaState_Online)
-				time.Sleep(3 * time.Second)
 				dc.SetPlaying(true)
-				time.Sleep(3 * time.Second)
 				dc.SayHello()
+				go retryDotaHelloUntilReady(helloRetryCtx, dc)
 
 			case *steam.LogOnFailedEvent:
-				log.Printf("LogOn failed. Reason: %v\n", e.Result)
-
-			case *events.GCConnectionStatusChanged:
-				log.Println("New GC connection status:", e.NewState)
-				if e.NewState == protocol.GCConnectionStatus_GCConnectionStatus_HAVE_SESSION {
-					// Non-blocking send
-					select {
-					case ready <- struct{}{}:
-					default:
-					}
-				} else {
-					dc.SayHello()
-				}
+				reportConnectionError(fmt.Errorf("steam logon failed: %v", e.Result))
 
 			case *steam.AccountInfoEvent:
 				log.Println(e.AccountFlags)
 
 			case *steam.DisconnectedEvent:
+				stopHelloRetry()
 				log.Printf("Disconnected from Steam :(")
 				if onDisconnected != nil {
 					onDisconnected()
 				}
 
 			case steam.FatalErrorEvent:
-				log.Print(e)
+				reportConnectionError(fmt.Errorf("steam fatal error: %w", error(e)))
 
 			case error:
-				log.Print(e)
+				reportConnectionError(e)
 			}
 		}
 	}()
 
-	server := sc.Connect()
-	log.Printf("Steam client connected to server %s\n", server.String())
-
-	// Wait until the Dota client has a GC session or until 15 seconds pass.
+	// Credential auth is an HTTP polling flow, so allow it more time than the
+	// old password-in-CM handshake needed.
 	select {
-	case <-ready:
+	case <-dc.Ready():
 		log.Println("Dota client is ready with a GC session.")
 		return sc, dc, nil
-	case <-time.After(15 * time.Second):
+	case err := <-connectionErrors:
+		stopHelloRetry()
+		sc.Disconnect()
+		return nil, nil, err
+	case <-time.After(30 * time.Second):
+		stopHelloRetry()
+		sc.Disconnect()
 		return nil, nil, errors.New("timeout waiting for Dota client to connect")
 	}
+}
+
+func retryDotaHelloUntilReady(ctx context.Context, dc *dotaGCClient) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-dc.Ready():
+			return
+		case <-ticker.C:
+			dc.SayHello()
+		}
+	}
+}
+
+func connectSteamWebSocket(sc *steam.Client) (string, error) {
+	servers, err := steam.FetchCMListForConnect(0)
+	if err != nil {
+		return "", fmt.Errorf("fetch Steam CM list: %w", err)
+	}
+
+	websocketServers := steam.FilterByType(servers, "websockets")
+	secureServers := make([]steam.CMServer, 0, len(websocketServers))
+	for _, server := range websocketServers {
+		if strings.HasSuffix(server.Endpoint, ":443") {
+			secureServers = append(secureServers, server)
+		}
+	}
+	if len(secureServers) == 0 {
+		return "", errors.New("steam directory returned no secure websocket servers")
+	}
+	sort.Slice(secureServers, func(i, j int) bool {
+		return secureServers[i].WeightedLoad < secureServers[j].WeightedLoad
+	})
+
+	const maxAttempts = 5
+	var lastErr error
+	for i, server := range secureServers {
+		if i >= maxAttempts {
+			break
+		}
+		if err := sc.ConnectToWebSocket(server.Endpoint); err == nil {
+			return server.Endpoint, nil
+		} else {
+			lastErr = err
+			log.Printf("Steam websocket %s is unavailable: %v", server.Endpoint, err)
+		}
+
+		// ConnectToWebSocket reports the same dial failure as a fatal event.
+		// Consume it here so a later successful attempt is not mistaken for a
+		// dropped established connection by the main event loop.
+		select {
+		case <-sc.Events():
+		default:
+		}
+	}
+
+	return "", fmt.Errorf("connect to Steam websocket after %d attempts: %w", maxAttempts, lastErr)
 }
 
 func (s *GoSteamService) gracefulDisconnect() {
