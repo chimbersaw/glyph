@@ -195,6 +195,8 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (
 	sc.Dialer = dialer.Dial
 	dc := newDotaGCClient(sc)
 	connectionErrors := make(chan error, 1)
+	helloRetryCtx, stopHelloRetry := context.WithCancel(context.Background())
+	defer stopHelloRetry()
 	reportConnectionError := func(err error) {
 		select {
 		case connectionErrors <- err:
@@ -235,7 +237,7 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (
 				sc.Social.SetPersonaState(steamlang.EPersonaState_Online)
 				dc.SetPlaying(true)
 				dc.SayHello()
-				go retryDotaHelloUntilReady(dc)
+				go retryDotaHelloUntilReady(helloRetryCtx, dc)
 
 			case *steam.LogOnFailedEvent:
 				reportConnectionError(fmt.Errorf("steam logon failed: %v", e.Result))
@@ -244,6 +246,7 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (
 				log.Println(e.AccountFlags)
 
 			case *steam.DisconnectedEvent:
+				stopHelloRetry()
 				log.Printf("Disconnected from Steam :(")
 				if onDisconnected != nil {
 					onDisconnected()
@@ -265,20 +268,24 @@ func initDotaClient(steamLoginInfo *steam.LogOnDetails, onDisconnected func()) (
 		log.Println("Dota client is ready with a GC session.")
 		return sc, dc, nil
 	case err := <-connectionErrors:
+		stopHelloRetry()
 		sc.Disconnect()
 		return nil, nil, err
 	case <-time.After(30 * time.Second):
+		stopHelloRetry()
 		sc.Disconnect()
 		return nil, nil, errors.New("timeout waiting for Dota client to connect")
 	}
 }
 
-func retryDotaHelloUntilReady(dc *dotaGCClient) {
+func retryDotaHelloUntilReady(ctx context.Context, dc *dotaGCClient) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case <-dc.Ready():
 			return
 		case <-ticker.C:
