@@ -2,10 +2,11 @@ package services
 
 import (
 	"fmt"
-	"github.com/gofiber/fiber/v2"
 	"math"
 	"os"
 	"strconv"
+
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/dotabuff/manta"
 	"github.com/dotabuff/manta/dota"
@@ -106,9 +107,9 @@ func (s MantaService) GetGlyphsFromDem(match dtos.Match) ([]models.Glyph, error)
 
 			for i := range pendingHeroes {
 				heroPlayers[i].PlayerID, _ = e.GetUint64("m_vecPlayerData.000" + strconv.Itoa(i) + ".m_iPlayerSteamID")
-				newHeroID, _ := e.GetUint32("m_vecPlayerTeamData.000" + strconv.Itoa(i) + ".m_nSelectedHeroID")
-				if newHeroID > 0 && newHeroID < 2000000 {
-					heroPlayers[i].HeroID = newHeroID
+				newHeroID, ok := e.GetInt32("m_vecPlayerTeamData.000" + strconv.Itoa(i) + ".m_nSelectedHeroID")
+				if ok && newHeroID > 0 && newHeroID < 1000000 {
+					heroPlayers[i].HeroID = uint32(newHeroID)
 					delete(pendingHeroes, i)
 				}
 			}
@@ -124,7 +125,7 @@ func (s MantaService) GetGlyphsFromDem(match dtos.Match) ([]models.Glyph, error)
 	for k := range glyphs {
 		for l := range heroPlayers {
 			if glyphs[k].UserSteamID == strconv.FormatInt(int64(heroPlayers[l].PlayerID), 10) {
-				glyphs[k].HeroID = heroPlayers[l].HeroID / 2 // idk why
+				glyphs[k].HeroID = heroPlayers[l].HeroID
 				break
 			}
 		}
