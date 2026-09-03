@@ -5,6 +5,7 @@ import (
 	"compress/bzip2"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/klauspost/compress/zstd"
 	"go-glyph/internal/core/dtos"
 	"io"
 	"log"
@@ -81,8 +82,13 @@ func (s ValveService) RetrieveFile(match dtos.Match) error {
 	bufferedWriter := bufio.NewWriter(file)
 	defer bufferedWriter.Flush()
 
-	// Create a bzip2 reader to decompress the content
-	reader := bzip2.NewReader(response.Body)
+	reader, closeReader, err := newReplayReader(response.Body)
+	if err != nil {
+		_ = file.Close()
+		_ = os.Remove(filename)
+		return CopyError{err}
+	}
+	defer closeReader()
 
 	// Copy the decompressed content to the file
 	_, err = io.Copy(bufferedWriter, reader)
@@ -99,4 +105,26 @@ func (s ValveService) RetrieveFile(match dtos.Match) error {
 
 	// Decompression completed
 	return nil
+}
+
+func newReplayReader(source io.Reader) (io.Reader, func(), error) {
+	bufferedReader := bufio.NewReader(source)
+	header, err := bufferedReader.Peek(4)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot read replay compression header: %w", err)
+	}
+
+	if header[0] == 'B' && header[1] == 'Z' && header[2] == 'h' && header[3] >= '1' && header[3] <= '9' {
+		return bzip2.NewReader(bufferedReader), func() {}, nil
+	}
+
+	if header[0] == 0x28 && header[1] == 0xb5 && header[2] == 0x2f && header[3] == 0xfd {
+		reader, err := zstd.NewReader(bufferedReader)
+		if err != nil {
+			return nil, nil, fmt.Errorf("cannot create zstd replay reader: %w", err)
+		}
+		return reader, reader.Close, nil
+	}
+
+	return nil, nil, fmt.Errorf("unsupported replay compression header: % x", header)
 }

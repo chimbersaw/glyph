@@ -9,6 +9,7 @@ require (
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/gofiber/fiber/v2 v2.52.14
 	github.com/gofiber/swagger v1.1.1
+	github.com/klauspost/compress v1.19.1
 	github.com/machinebox/graphql v0.2.2
 	github.com/sicdex/go-steam-ws v0.0.0-20260624181541-66895d5a1c9a
 	github.com/spf13/viper v1.21.0
@@ -49,7 +50,6 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/matryer/is v1.4.1 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
